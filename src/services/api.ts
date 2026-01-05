@@ -1,17 +1,14 @@
 // API базовая конфигурация
 const getAPIURL = () => {
-  // Для production на Timeweb
-  if (typeof window !== 'undefined' && (window as any).__API_URL__) {
-    return (window as any).__API_URL__;
+  // Для production на Timeweb из .env (VITE_API_URL)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
   }
-  // Для production на Timeweb из .env
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  // Для локальной разработки - используем текущий хост + порт 3000
+  // Для локальной разработки - используем текущий хост + HTTPS если нужно + порт 3000
   if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    return `http://${hostname}:3000`;
+    return `${protocol}//${hostname}:3000`;
   }
   return 'http://localhost:3000';
 };
