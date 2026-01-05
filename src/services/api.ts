@@ -4,13 +4,20 @@ const getAPIURL = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  // Для локальной разработки - используем текущий хост + HTTPS если нужно + порт 3000
+  
   if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:3000`;
+    
+    // Для локальной разработки - используем localhost:3000
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168')) {
+      return 'http://localhost:3000';
+    }
+    
+    // Для production на Timeweb - используем бэкенд домен БЕЗ портов
+    return 'https://vald3mare-dh-tg-miniapp-back-9fa8.twc1.net';
   }
-  return 'http://localhost:3000';
+  
+  return 'https://vald3mare-dh-tg-miniapp-back-9fa8.twc1.net';
 };
 
 const API_URL = getAPIURL();
