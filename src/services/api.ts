@@ -1,5 +1,22 @@
 // API базовая конфигурация
-const API_URL = (typeof window !== 'undefined' && (window as any).__API_URL__) || 'http://localhost:3000';
+const getAPIURL = () => {
+  // Для production на Timeweb
+  if (typeof window !== 'undefined' && (window as any).__API_URL__) {
+    return (window as any).__API_URL__;
+  }
+  // Для production на Timeweb из .env
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Для локальной разработки - используем текущий хост + порт 3000
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    return `http://${hostname}:3000`;
+  }
+  return 'http://localhost:3000';
+};
+
+const API_URL = getAPIURL();
 
 interface LoginResponse {
   token: string;
