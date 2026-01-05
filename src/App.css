@@ -1,0 +1,65 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.score-container {
+  margin-bottom: 20px;
+}
+
+.score {
+  display: flex;
+  justify-content: center;
+  font-size: 48px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.button-click {
+  width: 200px;
+  height: 200px;
+  background-color: #d3862e;
+  color: white;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 30px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.button-click:hover {
+  opacity: 0.8;
+}
+
+.footer {
+  background-color: #181818;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.btn-leaderboard {
+  background-color: transparent;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  font-size: 40px;
+}

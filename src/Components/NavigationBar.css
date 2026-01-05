@@ -1,0 +1,70 @@
+.nav-bar {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background: #ffffff;
+  border-radius: 40px;
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #888;
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 8px;
+  border-radius: 20px;
+  position: relative;
+}
+
+.nav-item svg {
+  font-size: 28px;
+  margin-bottom: 4px;
+  transition: all 0.3s ease;
+}
+
+.nav-item:hover {
+  color: #476CEE;
+  background: rgba(71, 108, 238, 0.1);
+  transform: translateY(-4px);
+}
+
+.nav-item.active {
+  color: #476CEE;
+  background: rgba(71, 108, 238, 0.15);
+}
+
+.nav-item.active svg {
+  filter: drop-shadow(0 0 8px rgba(71, 108, 238, 0.4));
+}
+
+.nav-item.pressed {
+  transform: scale(0.85);
+}
+
+.nav-item.pressed svg {
+  transform: scale(1.1);
+}

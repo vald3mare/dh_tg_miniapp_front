@@ -1,0 +1,151 @@
+.home-page {
+  min-height: 100vh;
+  background: #f5f9ff;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Верхняя плашка — 70px высота */
+.top-bar {
+  background: #ffffff;
+  border-radius: 40px;
+  height: 70px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.logo-text {
+  font-family: 'Bartina', sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  color: #476CEE;
+}
+
+.logo-image {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  right: 20px;
+}
+
+/* Главный синий блок */
+.main-content {
+  background: #476CEE;
+  border-radius: 40px;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #565054;
+  overflow: hidden;
+}
+
+/* Облачко — строго по центру */
+.cloud-container {
+  width: 325px;
+  height: 262px;
+  margin-bottom: 40px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cloud-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Контент внутри облачка — точные отступы 10px */
+.cloud-content {
+  position: absolute;
+  width: 85%;
+  text-align: center;
+}
+
+.cloud-content h1 {
+  font-family: 'Bartina', sans-serif;
+  font-weight: bold;
+  font-size: 32px;
+  margin: 0 0 10px 0; /* 10px снизу */
+  line-height: 1.2;
+}
+
+.accent {
+  color: #476CEE;
+}
+
+.cloud-content p {
+  font-family: 'Bartina', sans-serif;
+  font-size: 16px;
+  color: #5E5C5D;
+  margin: 0 0 10px 0; /* 10px снизу */
+  line-height: 1.4;
+}
+
+.trial-button {
+  background: #F5BDE8;
+  color: #d81b60;
+  border: none;
+  border-radius: 40px;
+  width: 230px;
+  height: 43px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 10px; /* 10px от текста выше */
+}
+
+/* Нижний рисунок */
+.drawing-container {
+  border-radius: 20px;
+  padding: 20px;
+  margin: 0 auto;
+  max-width: 300px;
+}
+
+.dog-drawing {
+  width: 100%;
+  opacity: 0.9;
+}
+
+/* Анимации */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.6s ease forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+}

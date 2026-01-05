@@ -1,0 +1,289 @@
+.profile-page {
+  min-height: 100vh;
+  background: #f5f9ff;
+  padding: 20px 10px 100px;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 30px;
+  animation: fadeInDown 0.6s ease;
+}
+
+.profile-header h1 {
+  font-family: 'Bartina', sans-serif;
+  font-size: 32px;
+  font-weight: bold;
+  color: #476CEE;
+  margin: 0;
+}
+
+.profile-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  animation: fadeInUp 0.6s ease;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #476CEE, #7b95ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  margin: 0 auto 15px;
+}
+
+.profile-card h2 {
+  font-family: 'Bartina', sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+  color: #476CEE;
+  margin: 0 0 5px;
+}
+
+.user-info p {
+  font-family: 'Bartina', sans-serif;
+  font-size: 14px;
+  color: #888;
+  margin: 5px 0;
+}
+
+.edit-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background: #476CEE;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-button:hover {
+  background: #3a52ba;
+  transform: translateY(-2px);
+}
+
+/* Питомцы */
+.pets-section {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  animation: fadeInUp 0.6s ease 0.1s both;
+}
+
+.pets-section h3 {
+  font-family: 'Bartina', sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  color: #476CEE;
+  margin: 0 0 15px;
+}
+
+.pets-list {
+  margin-bottom: 15px;
+}
+
+.pet-card {
+  display: flex;
+  align-items: center;
+  background: #f5f9ff;
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+
+.pet-card:hover {
+  background: #e8f0ff;
+  transform: translateX(5px);
+}
+
+.pet-icon {
+  font-size: 40px;
+  margin-right: 15px;
+}
+
+.pet-info h4 {
+  font-family: 'Bartina', sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  color: #476CEE;
+  margin: 0;
+}
+
+.pet-info p {
+  font-family: 'Bartina', sans-serif;
+  font-size: 12px;
+  color: #888;
+  margin: 3px 0 0;
+}
+
+.pet-info .age {
+  font-weight: bold;
+  color: #476CEE;
+}
+
+.add-pet-button {
+  width: 100%;
+  padding: 10px;
+  background: #f0f0f0;
+  color: #476CEE;
+  border: 2px dashed #476CEE;
+  border-radius: 15px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-pet-button:hover {
+  background: #f5f9ff;
+}
+
+/* Подписка */
+.subscription-section {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  animation: fadeInUp 0.6s ease 0.2s both;
+}
+
+.subscription-section h3 {
+  font-family: 'Bartina', sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  color: #476CEE;
+  margin: 0 0 15px;
+}
+
+.subscription-card {
+  background: linear-gradient(135deg, #476CEE, #7b95ff);
+  border-radius: 15px;
+  padding: 20px;
+  color: white;
+  margin-bottom: 15px;
+}
+
+.subscription-card p {
+  font-family: 'Bartina', sans-serif;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.subscription-card strong {
+  color: #fff;
+}
+
+.change-plan-button {
+  width: 100%;
+  padding: 10px;
+  background: white;
+  color: #476CEE;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.change-plan-button:hover {
+  transform: translateY(-2px);
+}
+
+/* История */
+.history-section {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  animation: fadeInUp 0.6s ease 0.3s both;
+}
+
+.history-section h3 {
+  font-family: 'Bartina', sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  color: #476CEE;
+  margin: 0 0 15px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-family: 'Bartina', sans-serif;
+  font-size: 14px;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-label {
+  color: #476CEE;
+  font-weight: bold;
+  flex: 1;
+}
+
+.history-date {
+  color: #888;
+  font-size: 12px;
+  margin: 0 10px;
+}
+
+.history-price {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+/* Состояния загрузки */
+.loading,
+.error {
+  text-align: center;
+  padding: 40px 20px;
+  font-family: 'Bartina', sans-serif;
+  font-size: 16px;
+  color: #476CEE;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+.no-pets,
+.no-orders {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-family: 'Bartina', sans-serif;
+  font-size: 14px;
+}
+
