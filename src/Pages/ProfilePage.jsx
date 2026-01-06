@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 
 export default function ProfilePage() {
-  // Тестовые данные
+  // Тестовые данные по умолчанию
   const testUserData = {
     id: 'test-user-123',
     name: 'Иван Петров',
@@ -14,7 +14,8 @@ export default function ProfilePage() {
     subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   };
 
-  // Попытка получить данные из Telegram
+  // TODO: Получить данные пользователя из Telegram
+  // Попытка получить данные из Telegram WebApp
   const getTelegramUser = () => {
     try {
       const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -41,33 +42,41 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [showAddPetForm, setShowAddPetForm] = useState(false);
+  const [newPet, setNewPet] = useState({ name: '', breed: '', age: '' });
 
-  // Загрузить профиль и данные
+  // Загрузить профиль и данные при монтировании компонента
   useEffect(() => {
     const loadUserData = async () => {
       try {
         setLoading(true);
         const userId = localStorage.getItem('userId') || testUserData.id;
 
-        // Загрузить профиль
+        // Загрузить профиль пользователя
         const userProfile = await api.getProfile(userId);
         setUserInfo((prev) => ({
           ...prev,
           ...userProfile,
         }));
+        setEditForm(userProfile);
 
-        // Загрузить питомцев
+        // Загрузить список питомцев
         const pets = await api.getPets(userId);
         setUserInfo((prev) => ({
           ...prev,
           pets: pets || [],
         }));
 
-        // Загрузить историю операций
+        // Загрузить историю заказов
         const userOrders = await api.getOrders(userId);
         setOrders(userOrders || []);
       } catch (err) {
-        console.log('Используются тестовые данные:', err.message);
+        console.log('Ошибка загрузки профиля:', err.message);
+        // TODO: Обработать ошибку подключения к API
+        setError('Не удалось загрузить данные профиля');
+        // Используем тестовые данные если API недоступен
         setUserInfo((prev) => ({
           ...prev,
           pets: [
@@ -83,6 +92,84 @@ export default function ProfilePage() {
     loadUserData();
   }, []);
 
+  // TODO: Обновить профиль пользователя
+  // Функция для сохранения отредактированных данных
+  const handleEditProfile = async () => {
+    try {
+      const userId = localStorage.getItem('userId') || testUserData.id;
+      const updatedUser = await api.updateProfile(userId, editForm);
+      setUserInfo((prev) => ({
+        ...prev,
+        ...updatedUser,
+      }));
+      setIsEditing(false);
+      // TODO: Показать тост уведомление "Профиль обновлён"
+      console.log('Профиль успешно обновлён');
+    } catch (err) {
+      console.log('Ошибка при обновлении профиля:', err.message);
+      // TODO: Показать сообщение об ошибке
+      alert('Не удалось обновить профиль');
+    }
+  };
+
+  // TODO: Добавить нового питомца
+  // Функция для добавления питомца
+  const handleAddPet = async () => {
+    try {
+      if (!newPet.name || !newPet.breed || !newPet.age) {
+        alert('Пожалуйста, заполните все поля');
+        return;
+      }
+
+      const userId = localStorage.getItem('userId') || testUserData.id;
+      const createdPet = await api.createPet({
+        ...newPet,
+        userId,
+        age: parseInt(newPet.age),
+      });
+
+      setUserInfo((prev) => ({
+        ...prev,
+        pets: [...prev.pets, createdPet],
+      }));
+
+      setNewPet({ name: '', breed: '', age: '' });
+      setShowAddPetForm(false);
+      // TODO: Показать тост уведомление "Питомец добавлен"
+      console.log('Питомец успешно добавлен');
+    } catch (err) {
+      console.log('Ошибка при добавлении питомца:', err.message);
+      // TODO: Показать сообщение об ошибке
+      alert('Не удалось добавить питомца');
+    }
+  };
+
+  // TODO: Удалить питомца
+  // Функция для удаления питомца
+  const handleDeletePet = async (petId) => {
+    try {
+      if (!confirm('Вы уверены?')) return;
+
+      await api.deletePet(petId);
+      setUserInfo((prev) => ({
+        ...prev,
+        pets: prev.pets.filter((p) => p.id !== petId),
+      }));
+      // TODO: Показать тост уведомление "Питомец удалён"
+      console.log('Питомец удален');
+    } catch (err) {
+      console.log('Ошибка при удалении питомца:', err.message);
+      alert('Не удалось удалить питомца');
+    }
+  };
+
+  // TODO: Управление подпиской (изменение тарифа)
+  const handleChangePlan = () => {
+    // TODO: Перейти на страницу тарифов или открыть модальное окно
+    console.log('Переход на изменение плана подписки');
+    // window.location.href = '/tariffs';
+  };
+
   return (
     <div className="profile-page">
       <div className="profile-header">
@@ -92,8 +179,6 @@ export default function ProfilePage() {
       <div className="profile-container">
         {loading ? (
           <div className="loading">Загрузка профиля...</div>
-        ) : error ? (
-          <div className="error">Ошибка загрузки данных</div>
         ) : (
           <>
             {/* Информация пользователя */}
@@ -101,12 +186,44 @@ export default function ProfilePage() {
               <div className="avatar">
                 <span>{userInfo.avatar}</span>
               </div>
-              <div className="user-info">
-                <h2>{userInfo.name}</h2>
-                <p className="email">{userInfo.email}</p>
-                <p className="phone">{userInfo.phone}</p>
-              </div>
-              <button className="edit-button">Редактировать</button>
+              {!isEditing ? (
+                <>
+                  <div className="user-info">
+                    <h2>{userInfo.name}</h2>
+                    <p className="email">{userInfo.email}</p>
+                    <p className="phone">{userInfo.phone}</p>
+                  </div>
+                  <button className="edit-button" onClick={() => setIsEditing(true)}>
+                    Редактировать
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* TODO: Форма редактирования профиля - сделать UI для редактирования полей */}
+                  <div className="edit-form">
+                    <input
+                      type="text"
+                      value={editForm.name || ''}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder="Имя"
+                    />
+                    <input
+                      type="email"
+                      value={editForm.email || ''}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      placeholder="Email"
+                    />
+                    <input
+                      type="tel"
+                      value={editForm.phone || ''}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      placeholder="Телефон"
+                    />
+                    <button onClick={handleEditProfile}>Сохранить</button>
+                    <button onClick={() => setIsEditing(false)}>Отмена</button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Питомцы */}
@@ -122,13 +239,49 @@ export default function ProfilePage() {
                         <p>{pet.breed}</p>
                         <p className="age">{pet.age} лет</p>
                       </div>
+                      {/* TODO: Добавить кнопки редактирования и удаления питомца */}
+                      <button
+                        className="delete-pet-button"
+                        onClick={() => handleDeletePet(pet.id)}
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))
                 ) : (
                   <p className="no-pets">Питомцев нет</p>
                 )}
               </div>
-              <button className="add-pet-button">+ Добавить питомца</button>
+
+              {/* TODO: Оформить UI для добавления питомца (форма в модальном окне или раскрывающейся секции) */}
+              {!showAddPetForm ? (
+                <button className="add-pet-button" onClick={() => setShowAddPetForm(true)}>
+                  + Добавить питомца
+                </button>
+              ) : (
+                <div className="add-pet-form">
+                  <input
+                    type="text"
+                    value={newPet.name}
+                    onChange={(e) => setNewPet({ ...newPet, name: e.target.value })}
+                    placeholder="Имя питомца"
+                  />
+                  <input
+                    type="text"
+                    value={newPet.breed}
+                    onChange={(e) => setNewPet({ ...newPet, breed: e.target.value })}
+                    placeholder="Порода"
+                  />
+                  <input
+                    type="number"
+                    value={newPet.age}
+                    onChange={(e) => setNewPet({ ...newPet, age: e.target.value })}
+                    placeholder="Возраст (в годах)"
+                  />
+                  <button onClick={handleAddPet}>Добавить</button>
+                  <button onClick={() => setShowAddPetForm(false)}>Отмена</button>
+                </div>
+              )}
             </div>
 
             {/* Подписка */}
@@ -146,7 +299,10 @@ export default function ProfilePage() {
                       : 'Не активна'}
                   </strong>
                 </p>
-                <button className="change-plan-button">Изменить план</button>
+                {/* TODO: Добавить функционал изменения плана подписки */}
+                <button className="change-plan-button" onClick={handleChangePlan}>
+                  Изменить план
+                </button>
               </div>
             </div>
 
