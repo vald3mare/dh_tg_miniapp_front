@@ -1,8 +1,22 @@
+// Типизация для Vite env переменных
+interface ImportMetaEnv {
+  VITE_API_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 // API базовая конфигурация
 const getAPIURL = () => {
   // Для production на Timeweb из .env (VITE_API_URL)
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  // Безопасная проверка чтобы избежать ошибок на старых браузерах
+  try {
+    if (import.meta?.env?.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
+    }
+  } catch (e) {
+    console.log('env переменная недоступна');
   }
   
   if (typeof window !== 'undefined') {
@@ -50,16 +64,36 @@ async function apiCall<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
+    // Пытаемся спарсить JSON ответ
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+
+    if (!response.ok) {
+      // Выводим подробную ошибку для отладки
+      console.error(`API Error ${response.status}:`, {
+        endpoint,
+        status: response.statusText,
+        data,
+      });
+      throw new Error(`API error: ${response.statusText} - ${JSON.stringify(data)}`);
+    }
+
+    return data as T;
+  } catch (error) {
+    console.error(`Fetch error on ${endpoint}:`, error);
+    throw error;
   }
-
-  return response.json() as Promise<T>;
 }
 
 export const api = {
