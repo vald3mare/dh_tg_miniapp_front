@@ -49,6 +49,23 @@ export default function ProfilePage() {
    */
   const getTelegramUserData = () => {
     try {
+      // Сначала проверим в window объекте (установлено в App.jsx из SDK)
+      if (window.telegramUser) {
+        const userData = {
+          id: window.telegramUser.id,
+          firstName: window.telegramUser.first_name || '',
+          lastName: window.telegramUser.last_name || '',
+          username: window.telegramUser.username,
+          telegramId: window.telegramUser.id,
+          isPremium: window.telegramUser.is_premium || false,
+          avatarLetters: (window.telegramUser.first_name?.[0] || '?') + (window.telegramUser.last_name?.[0] || ''),
+        };
+        
+        console.log('✅ Данные Telegram получены из SDK:', userData);
+        return userData;
+      }
+      
+      // Fallback на старый метод
       const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
       
       if (telegramUser) {
@@ -61,7 +78,7 @@ export default function ProfilePage() {
           isPremium: telegramUser.is_premium || false,
         };
         
-        console.log('✅ Данные Telegram получены:', userData);
+        console.log('✅ Данные Telegram получены (fallback):', userData);
         return userData;
       } else {
         console.log('⚠️  Telegram данные недоступны (не открыто в Telegram)');
@@ -172,7 +189,7 @@ export default function ProfilePage() {
             lastName,
             email: userProfile.email || '',
             phoneNumber: userProfile.phoneNumber || '',
-            avatar: (firstName[0] || '?') + (lastName[0] || ''),
+            avatar: '🐕', // Используем эмодзи собачки вместо букв
             subscriptionPlan: userProfile.subscriptionPlan || 'free',
             subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
             pets: [],
@@ -263,7 +280,7 @@ export default function ProfilePage() {
         lastName,
         email: updatedUser.email || '',
         phoneNumber: updatedUser.phoneNumber || '',
-        avatar: (firstName[0] || '?') + (lastName[0] || ''),
+        avatar: '🐕', // Используем эмодзи собачки вместо букв
       }));
       
       setIsEditing(false);
@@ -386,10 +403,11 @@ export default function ProfilePage() {
                     <h2>
                       {userInfo.firstName} {userInfo.lastName}
                     </h2>
-                    {telegramData && userInfo.telegramVerified && (
+                    {telegramData && (
                       <div className="telegram-badge">
                         <span className="telegram-badge-icon">✓ Telegram</span>
-                        @{telegramData.username || 'user'}
+                        <span className="telegram-username">@{telegramData.username || 'user'}</span>
+                        {telegramData.isPremium && <span className="premium-badge">⭐ Premium</span>}
                       </div>
                     )}
                     <p className="email">{userInfo.email || '📧 Email не указан'}</p>

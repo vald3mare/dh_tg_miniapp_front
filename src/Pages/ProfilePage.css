@@ -459,19 +459,36 @@
 
 /* Telegram данные в профиле */
 .telegram-badge {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: linear-gradient(135deg, #0088cc, #00b4d8);
   color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 8px 16px;
+  border-radius: 25px;
   font-family: 'Manrope', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: bold;
-  margin-top: 8px;
-  animation: fadeInUp 0.6s ease 0.4s both;
+  margin-top: 10px;
+  animation: fadeInUp 0.6s ease 0.3s both;
+  box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+  flex-wrap: wrap;
 }
 
 .telegram-badge-icon {
-  margin-right: 4px;
+  font-size: 14px;
 }
 
+.telegram-username {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.premium-badge {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-left: 4px;
+}
