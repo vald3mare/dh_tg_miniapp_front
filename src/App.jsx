@@ -28,13 +28,16 @@ function App() {
   useEffect(() => {
     const initializeTelegramApp = async () => {
       try {
+        console.log('🚀 === ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ===');
+        
         // 1️⃣ Инициализируем Telegram WebApp
         if (window.Telegram?.WebApp) {
-          console.log('📱 Telegram WebApp инициализирован');
+          console.log('✅ Telegram WebApp доступен');
           window.Telegram.WebApp.ready();
           window.Telegram.WebApp.expand();
+          console.log('✅ Telegram WebApp инициализирован и развернут');
         } else {
-          console.warn('⚠️  Telegram WebApp недоступен (VPN или не Telegram)');
+          console.warn('⚠️  Telegram WebApp НЕ доступен (VPN, разработка или не Telegram)');
         }
 
         // 2️⃣ Проверяем есть ли уже authToken и userId
@@ -44,10 +47,11 @@ function App() {
         console.log('🔍 Проверка localStorage:', {
           hasToken: !!existingToken,
           hasUserId: !!existingUserId,
+          userId: existingUserId,
         });
 
         if (existingToken && existingUserId) {
-          console.log('✅ Токен найден в localStorage, пропускаем login:', existingUserId);
+          console.log('✅ Токен найден в localStorage, используем существующего пользователя');
           setIsAuthenticated(true);
           setIsAuthLoading(false);
           return;
@@ -56,21 +60,25 @@ function App() {
         // 3️⃣ Получаем initData из Telegram (если доступна)
         const initData = window.Telegram?.WebApp?.initData;
         console.log('📋 initData доступна:', !!initData);
+        
+        if (initData) {
+          console.log('📋 initData длина:', initData.length);
+        }
 
         if (initData) {
           // 4️⃣ Есть initData - отправляем на login
-          console.log('🔐 Отправляем initData на бэкенд для login...');
+          console.log('🔐 ПОПЫТКА LOGIN: Отправляем initData на бэкенд...');
           try {
             const loginResponse = await api.login(initData);
             
-            console.log('📨 Login response получен:', {
+            console.log('📨 LOGIN RESPONSE получен:', {
               hasToken: !!loginResponse?.token,
               hasUser: !!loginResponse?.user,
               userId: loginResponse?.user?.id,
             });
 
             if (loginResponse?.token && loginResponse?.user?.id) {
-              console.log('✅ Login успешен! userId:', loginResponse.user.id);
+              console.log('✅ LOGIN УСПЕШЕН! userId:', loginResponse.user.id);
               localStorage.setItem('authToken', loginResponse.token);
               localStorage.setItem('userId', loginResponse.user.id);
               console.log('💾 Данные сохранены в localStorage');
@@ -79,48 +87,71 @@ function App() {
               throw new Error('Ответ от login не содержит требуемые данные');
             }
           } catch (loginError) {
-            console.error('❌ Ошибка при login:', loginError.message);
-            console.log('📱 Используем fallback - создаем тестового пользователя');
+            console.error('❌ LOGIN ОШИБКА:', loginError.message);
+            console.log('📱 FALLBACK: Создаем тестового пользователя');
             
             // Fallback: создаем временного пользователя для тестирования
             // Используем правильный UUID v4 формат
             const testUserId = generateUUID();
+            console.log('🎲 Сгенерирован UUID:', testUserId);
+            console.log('✅ UUID длина:', testUserId.length);
+            console.log('✅ UUID валиден:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testUserId));
+            
             localStorage.setItem('userId', testUserId);
             localStorage.setItem('authToken', 'test-token-' + generateUUID());
             localStorage.setItem('telegramTest', 'true');
             
-            console.log('✅ Fallback пользователь создан:', testUserId);
+            console.log('✅ FALLBACK пользователь создан:', testUserId);
+            console.log('💾 Данные сохранены в localStorage');
+            console.log('📊 Проверка localStorage:', {
+              userId: localStorage.getItem('userId'),
+              userIdLength: localStorage.getItem('userId')?.length,
+            });
             setIsAuthenticated(true);
           }
         } else {
           // Нет initData (VPN или не Telegram)
-          console.warn('⚠️  initData недоступна');
+          console.warn('⚠️  initData недоступна - режим разработки');
           console.log('📝 Создаем тестового пользователя для разработки...');
           
           // Используем правильный UUID v4 формат
           const testUserId = generateUUID();
+          console.log('🎲 Сгенерирован UUID:', testUserId);
+          console.log('✅ UUID длина:', testUserId.length);
+          console.log('✅ UUID валиден:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testUserId));
+          
           localStorage.setItem('userId', testUserId);
           localStorage.setItem('authToken', 'test-token-' + generateUUID());
           localStorage.setItem('telegramTest', 'true');
           
           console.log('✅ Тестовый пользователь создан:', testUserId);
+          console.log('💾 Данные сохранены в localStorage');
+          console.log('📊 Проверка localStorage:', {
+            userId: localStorage.getItem('userId'),
+            userIdLength: localStorage.getItem('userId')?.length,
+          });
           setIsAuthenticated(true);
         }
 
       } catch (error) {
-        console.error('❌ Критическая ошибка при инициализации:', error);
+        console.error('❌ КРИТИЧЕСКАЯ ОШИБКА при инициализации:', error);
         
         // Даже при критической ошибке создаем fallback пользователя
         // Используем правильный UUID v4 формат
         const testUserId = generateUUID();
+        console.log('🎲 Сгенерирован UUID (критическая ошибка):', testUserId);
+        console.log('✅ UUID длина:', testUserId.length);
+        console.log('✅ UUID валиден:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testUserId));
+        
         localStorage.setItem('userId', testUserId);
         localStorage.setItem('authToken', 'test-token-' + generateUUID());
         localStorage.setItem('telegramTest', 'true');
         
-        console.warn('⚠️  Fallback пользователь создан из-за ошибки:', testUserId);
+        console.warn('⚠️  FALLBACK пользователь создан из-за ошибки:', testUserId);
         setIsAuthenticated(true);
       } finally {
         setIsAuthLoading(false);
+        console.log('🚀 === ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА ===\n');
       }
     };
 

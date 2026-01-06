@@ -230,13 +230,17 @@ export default function ProfilePage() {
     try {
       const userId = localStorage.getItem('userId');
       
+      console.log('📝 === РЕДАКТИРОВАНИЕ ПРОФИЛЯ ===');
+      console.log('🔍 userId из localStorage:', userId);
+      
       if (!userId) {
         throw new Error('userId не найден в localStorage');
       }
 
-      console.log('📤 Отправляем обновление профиля:', { userId, data: editForm });
+      console.log('📤 Отправляем PUT /users/:id с данными:', { userId, data: editForm });
       
       const updatedUser = await api.updateProfile(userId, editForm);
+      
       console.log('✅ Профиль обновлен:', updatedUser);
       
       // Обновляем локальное состояние
@@ -256,7 +260,7 @@ export default function ProfilePage() {
       setIsEditing(false);
       alert('✅ Профиль успешно обновлён!');
     } catch (err) {
-      console.error('❌ Ошибка при обновлении профиля:', err);
+      console.error('❌ ОШИБКА при обновлении профиля:', err);
       alert(`Не удалось обновить профиль: ${err.message}`);
     }
   };
@@ -268,6 +272,8 @@ export default function ProfilePage() {
    */
   const handleAddPet = async () => {
     try {
+      console.log('🐕 === ДОБАВЛЕНИЕ ПИТОМЦА ===');
+      
       // Валидация
       if (!newPet.name.trim() || !newPet.breed.trim() || !newPet.age) {
         alert('❌ Пожалуйста, заполните все поля питомца');
@@ -275,6 +281,7 @@ export default function ProfilePage() {
       }
 
       const userId = localStorage.getItem('userId');
+      console.log('🔍 userId из localStorage:', userId);
       
       if (!userId) {
         throw new Error('userId не найден в localStorage');
@@ -288,8 +295,7 @@ export default function ProfilePage() {
         description: '', // Опционально - может быть добавлено позже
       };
 
-
-      console.log('📤 Отправляем новое животное:', petData);
+      console.log('📤 Отправляем POST /pets с данными:', petData);
       const createdPet = await api.createPet(petData);
       console.log('✅ Питомец создан:', createdPet);
 
@@ -304,7 +310,7 @@ export default function ProfilePage() {
       setShowAddPetForm(false);
       alert('✅ Питомец успешно добавлен!');
     } catch (err) {
-      console.error('❌ Ошибка при добавлении питомца:', err);
+      console.error('❌ ОШИБКА при добавлении питомца:', err);
       alert(`Не удалось добавить питомца: ${err.message}`);
     }
   };
