@@ -287,3 +287,191 @@
   font-size: 14px;
 }
 
+/* ========== ФОРМЫ РЕДАКТИРОВАНИЯ И ДОБАВЛЕНИЯ ========== */
+
+.edit-form,
+.add-pet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #f5f9ff;
+  border-radius: 15px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.edit-form label,
+.add-pet-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-form label strong,
+.add-pet-form label strong {
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  color: #476CEE;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-form input,
+.add-pet-form input {
+  padding: 12px 15px;
+  border: 2px solid #e0e7ff;
+  border-radius: 12px;
+  font-family: 'Bartina', sans-serif;
+  font-size: 14px;
+  color: #213547;
+  background: white;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.edit-form input:focus,
+.add-pet-form input:focus {
+  border-color: #476CEE;
+  box-shadow: 0 0 10px rgba(71, 108, 238, 0.15);
+  background: #fafbff;
+}
+
+.edit-form input::placeholder,
+.add-pet-form input::placeholder {
+  color: #aaa;
+}
+
+.edit-form button,
+.add-pet-form button {
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 4px;
+}
+
+.edit-form-save,
+.add-pet-form-save {
+  background: #476CEE;
+  color: white;
+}
+
+.edit-form-save:hover,
+.add-pet-form-save:hover {
+  background: #3a52ba;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(71, 108, 238, 0.3);
+}
+
+.edit-form-save:active,
+.add-pet-form-save:active {
+  transform: translateY(0);
+}
+
+.edit-form-cancel,
+.add-pet-form-cancel {
+  background: #f0f0f0;
+  color: #888;
+  border: 2px solid #e0e0e0;
+}
+
+.edit-form-cancel:hover,
+.add-pet-form-cancel:hover {
+  background: #e8e8e8;
+  color: #555;
+  border-color: #d0d0d0;
+}
+
+.edit-form-cancel:active,
+.add-pet-form-cancel:active {
+  transform: scale(0.98);
+}
+
+/* Кнопка удаления питомца */
+.delete-pet-button {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-weight: bold;
+  font-family: 'Manrope', sans-serif;
+}
+
+.delete-pet-button:hover {
+  background: #ff5252;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.delete-pet-button:active {
+  transform: scale(0.95);
+}
+
+/* ========== СОСТОЯНИЯ И СООБЩЕНИЯ ========== */
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Telegram данные в профиле */
+.telegram-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #0088cc, #00b4d8);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 8px;
+  animation: fadeInUp 0.6s ease 0.4s both;
+}
+
+.telegram-badge-icon {
+  margin-right: 4px;
+}
+

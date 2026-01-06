@@ -15,10 +15,14 @@ export default function ProfilePage() {
     subscriptionPlan: 'free',
     subscriptionExpiresAt: null,
     pets: [],
+    telegramVerified: false,
   });
 
   // История заказов и подписок
   const [orders, setOrders] = useState([]);
+  
+  // Данные Telegram (для отображения источника данных)
+  const [telegramData, setTelegramData] = useState(null);
   
   // UI состояние
   const [loading, setLoading] = useState(true);
@@ -40,103 +44,162 @@ export default function ProfilePage() {
   // ==================== ПОЛУЧЕНИЕ ДАННЫХ TELEGRAM ====================
   /**
    * Получить данные пользователя из Telegram WebApp
+   * Это основной источник данных для первого входа в приложение
    * ВАЖНО: Это работает только когда приложение открыто в Telegram
    */
   const getTelegramUserData = () => {
     try {
       const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      
       if (telegramUser) {
-        console.log('✅ Данные Telegram получены:', telegramUser);
-        return {
+        const userData = {
           firstName: telegramUser.first_name || '',
           lastName: telegramUser.last_name || '',
           username: telegramUser.username,
           telegramId: telegramUser.id,
-          avatar: (telegramUser.first_name?.[0] || '?') + (telegramUser.last_name?.[0] || ''),
+          avatarLetters: (telegramUser.first_name?.[0] || '?') + (telegramUser.last_name?.[0] || ''),
+          isPremium: telegramUser.is_premium || false,
         };
+        
+        console.log('✅ Данные Telegram получены:', userData);
+        return userData;
       } else {
         console.log('⚠️  Telegram данные недоступны (не открыто в Telegram)');
+        return null;
       }
     } catch (error) {
       console.log('❌ Ошибка при чтении Telegram данных:', error);
+      return null;
     }
-    return null;
   };
 
   // ==================== ЗАГРУЗКА ПРОФИЛЯ ====================
   /**
    * Загрузить данные профиля пользователя при монтировании компонента
-   * Получает существующего пользователя по ID из localStorage
-   * или создает нового если необходимо
+   * Сценарий:
+   * 1. Пытаемся получить userId из localStorage (уже залогированный пользователь)
+   * 2. Если нет - получаем данные из Telegram (новый пользователь)
+   * 3. Загружаем профиль с бэкенда (если уже есть в БД)
+   * 4. Если профиля нет - показываем данные из Telegram с возможностью редактирования
    */
   useEffect(() => {
     const loadUserData = async () => {
       try {
         setLoading(true);
         
-        // 1. Получаем сохраненный userId из localStorage
+        // 1️⃣ Получаем Telegram данные (основной источник информации)
+        const telegram = getTelegramUserData();
+        if (telegram) {
+          setTelegramData(telegram);
+          console.log('📱 Telegram данные готовы:', telegram);
+        }
+        
+        // 2️⃣ Проверяем userId в localStorage
         let userId = localStorage.getItem('userId');
         console.log('🔍 userId из localStorage:', userId);
 
-        // 2. Если userId нет, пытаемся получить из Telegram
-        if (!userId) {
-          const telegramData = getTelegramUserData();
-          if (!telegramData) {
-            throw new Error('Не удалось получить данные пользователя. Откройте приложение через Telegram.');
-          }
-          console.log('📱 Используем Telegram данные:', telegramData);
-        }
-
-        // 3. Если у нас есть userId - загружаем профиль
+        // 3️⃣ Если userId есть - загружаем существующий профиль
         if (userId) {
-          console.log('📥 Загружаем профиль пользователя:', userId);
-          const userProfile = await api.getProfile(userId);
-          
-          if (!userProfile) {
-            throw new Error('Профиль не найден');
+          try {
+            console.log('📥 Загружаем профиль из БД:', userId);
+            const userProfile = await api.getProfile(userId);
+            
+            if (userProfile) {
+              const firstName = userProfile.firstName || telegram?.firstName || '';
+              const lastName = userProfile.lastName || telegram?.lastName || '';
+              
+              setUserInfo({
+                id: userProfile.id,
+                firstName,
+                lastName,
+                email: userProfile.email || '',
+                phoneNumber: userProfile.phoneNumber || '',
+                avatar: (firstName[0] || '?') + (lastName[0] || ''),
+                subscriptionPlan: userProfile.subscriptionPlan || 'free',
+                subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
+                pets: [],
+                telegramVerified: true,
+              });
+
+              setEditForm({
+                firstName,
+                lastName,
+                email: userProfile.email || '',
+                phoneNumber: userProfile.phoneNumber || '',
+              });
+
+              // 4️⃣ Загружаем питомцев
+              console.log('🐕 Загружаем питомцев:', userId);
+              const pets = await api.getPets(userId);
+              setUserInfo((prev) => ({
+                ...prev,
+                pets: pets || [],
+              }));
+
+              // 5️⃣ Загружаем историю заказов
+              console.log('📜 Загружаем заказы:', userId);
+              const userOrders = await api.getOrders(userId);
+              setOrders(userOrders || []);
+
+              console.log('✅ Профиль успешно загружен из БД');
+            } else {
+              throw new Error('Профиль не найден в БД');
+            }
+          } catch (profileError) {
+            console.warn('⚠️  Ошибка загрузки профиля из БД:', profileError.message);
+            // Если ошибка при загрузке из БД, используем Telegram данные
+            if (telegram) {
+              setUserInfo({
+                id: null,
+                firstName: telegram.firstName,
+                lastName: telegram.lastName,
+                email: '',
+                phoneNumber: '',
+                avatar: telegram.avatarLetters,
+                subscriptionPlan: 'free',
+                subscriptionExpiresAt: null,
+                pets: [],
+                telegramVerified: true,
+              });
+
+              setEditForm({
+                firstName: telegram.firstName,
+                lastName: telegram.lastName,
+                email: '',
+                phoneNumber: '',
+              });
+
+              console.log('ℹ️  Используем данные из Telegram, заполните недостающие поля');
+            }
           }
-
-          // Обновляем состояние с реальными данными
-          const firstName = userProfile.firstName || '';
-          const lastName = userProfile.lastName || '';
-          
+        } else if (telegram) {
+          // Новый пользователь - заполняем форму данными из Telegram
+          console.log('👤 Новый пользователь, используем Telegram данные');
           setUserInfo({
-            id: userProfile.id,
-            firstName,
-            lastName,
-            email: userProfile.email || '',
-            phoneNumber: userProfile.phoneNumber || '',
-            avatar: (firstName[0] || '?') + (lastName[0] || ''),
-            subscriptionPlan: userProfile.subscriptionPlan || 'free',
-            subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
+            id: null,
+            firstName: telegram.firstName,
+            lastName: telegram.lastName,
+            email: '',
+            phoneNumber: '',
+            avatar: telegram.avatarLetters,
+            subscriptionPlan: 'free',
+            subscriptionExpiresAt: null,
             pets: [],
+            telegramVerified: true,
           });
 
-          // Инициализируем editForm с реальными данными
           setEditForm({
-            firstName,
-            lastName,
-            email: userProfile.email || '',
-            phoneNumber: userProfile.phoneNumber || '',
+            firstName: telegram.firstName,
+            lastName: telegram.lastName,
+            email: '',
+            phoneNumber: '',
           });
-
-          // 4. Загружаем питомцев пользователя
-          console.log('🐕 Загружаем питомцев пользователя:', userId);
-          const pets = await api.getPets(userId);
-          setUserInfo((prev) => ({
-            ...prev,
-            pets: pets || [],
-          }));
-
-          // 5. Загружаем историю заказов
-          console.log('📜 Загружаем заказы пользователя:', userId);
-          const userOrders = await api.getOrders(userId);
-          setOrders(userOrders || []);
-
-          console.log('✅ Профиль успешно загружен');
+        } else {
+          throw new Error('Не удалось получить данные. Откройте приложение через Telegram.');
         }
+
       } catch (err) {
-        console.error('❌ Ошибка при загрузке профиля:', err.message);
+        console.error('❌ Критическая ошибка при загрузке профиля:', err.message);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -290,43 +353,61 @@ export default function ProfilePage() {
                     <h2>
                       {userInfo.firstName} {userInfo.lastName}
                     </h2>
-                    <p className="email">{userInfo.email || 'Email не указан'}</p>
-                    <p className="phone">{userInfo.phoneNumber || 'Телефон не указан'}</p>
+                    {telegramData && userInfo.telegramVerified && (
+                      <div className="telegram-badge">
+                        <span className="telegram-badge-icon">✓ Telegram</span>
+                        @{telegramData.username || 'user'}
+                      </div>
+                    )}
+                    <p className="email">{userInfo.email || '📧 Email не указан'}</p>
+                    <p className="phone">{userInfo.phoneNumber || '📞 Телефон не указан'}</p>
                   </div>
                   <button className="edit-button" onClick={() => setIsEditing(true)}>
-                    ✏️ Редактировать
+                    ✏️ Редактировать профиль
                   </button>
                 </>
               ) : (
                 <>
                   {/* Форма редактирования профиля */}
                   <div className="edit-form">
-                    <input
-                      type="text"
-                      value={editForm.firstName || ''}
-                      onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                      placeholder="Имя"
-                    />
-                    <input
-                      type="text"
-                      value={editForm.lastName || ''}
-                      onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                      placeholder="Фамилия"
-                    />
-                    <input
-                      type="email"
-                      value={editForm.email || ''}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      placeholder="Email"
-                    />
-                    <input
-                      type="tel"
-                      value={editForm.phoneNumber || ''}
-                      onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
-                      placeholder="Телефон"
-                    />
-                    <button onClick={handleEditProfile}>💾 Сохранить</button>
-                    <button onClick={() => setIsEditing(false)}>❌ Отмена</button>
+                    <label>
+                      <strong>Имя</strong>
+                      <input
+                        type="text"
+                        value={editForm.firstName || ''}
+                        onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                        placeholder="Ваше имя"
+                      />
+                    </label>
+                    <label>
+                      <strong>Фамилия</strong>
+                      <input
+                        type="text"
+                        value={editForm.lastName || ''}
+                        onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                        placeholder="Ваша фамилия"
+                      />
+                    </label>
+                    <label>
+                      <strong>Email</strong>
+                      <input
+                        type="email"
+                        value={editForm.email || ''}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        placeholder="your@email.com"
+                      />
+                    </label>
+                    <label>
+                      <strong>Телефон</strong>
+                      <input
+                        type="tel"
+                        value={editForm.phoneNumber || ''}
+                        onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
+                        placeholder="+7 (___) ___-__-__"
+                      />
+                    </label>
+                    <button className="edit-form-save" onClick={handleEditProfile}>💾 Сохранить изменения</button>
+                    <button className="edit-form-cancel" onClick={() => setIsEditing(false)}>❌ Отмена</button>
                   </div>
                 </>
               )}
@@ -365,26 +446,38 @@ export default function ProfilePage() {
                 </button>
               ) : (
                 <div className="add-pet-form">
-                  <input
-                    type="text"
-                    value={newPet.name}
-                    onChange={(e) => setNewPet({ ...newPet, name: e.target.value })}
-                    placeholder="Имя питомца"
-                  />
-                  <input
-                    type="text"
-                    value={newPet.breed}
-                    onChange={(e) => setNewPet({ ...newPet, breed: e.target.value })}
-                    placeholder="Порода"
-                  />
-                  <input
-                    type="number"
-                    value={newPet.age}
-                    onChange={(e) => setNewPet({ ...newPet, age: e.target.value })}
-                    placeholder="Возраст (в годах)"
-                  />
-                  <button onClick={handleAddPet}>💾 Добавить</button>
-                  <button onClick={() => setShowAddPetForm(false)}>❌ Отмена</button>
+                  <label>
+                    <strong>Имя питомца</strong>
+                    <input
+                      type="text"
+                      value={newPet.name}
+                      onChange={(e) => setNewPet({ ...newPet, name: e.target.value })}
+                      placeholder="Например: Шарик"
+                      autoFocus
+                    />
+                  </label>
+                  <label>
+                    <strong>Порода</strong>
+                    <input
+                      type="text"
+                      value={newPet.breed}
+                      onChange={(e) => setNewPet({ ...newPet, breed: e.target.value })}
+                      placeholder="Например: Лабрадор"
+                    />
+                  </label>
+                  <label>
+                    <strong>Возраст (в годах)</strong>
+                    <input
+                      type="number"
+                      value={newPet.age}
+                      onChange={(e) => setNewPet({ ...newPet, age: e.target.value })}
+                      placeholder="Например: 3"
+                      min="0"
+                      max="50"
+                    />
+                  </label>
+                  <button className="add-pet-form-save" onClick={handleAddPet}>💾 Добавить питомца</button>
+                  <button className="add-pet-form-cancel" onClick={() => setShowAddPetForm(false)}>❌ Отмена</button>
                 </div>
               )}
             </div>
