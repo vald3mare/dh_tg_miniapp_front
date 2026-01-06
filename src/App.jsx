@@ -7,6 +7,19 @@ import ProfilePage from './Pages/ProfilePage';
 import NavigationBar from './Components/NavigationBar';
 import api from './services/api';
 
+/**
+ * Генерирует UUID v4 (случайный UUID)
+ * Используется для создания ID тестовых пользователей
+ * Формат: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ */
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -70,9 +83,10 @@ function App() {
             console.log('📱 Используем fallback - создаем тестового пользователя');
             
             // Fallback: создаем временного пользователя для тестирования
-            const testUserId = 'test-' + Date.now();
+            // Используем правильный UUID v4 формат
+            const testUserId = generateUUID();
             localStorage.setItem('userId', testUserId);
-            localStorage.setItem('authToken', 'test-token-' + Date.now());
+            localStorage.setItem('authToken', 'test-token-' + generateUUID());
             localStorage.setItem('telegramTest', 'true');
             
             console.log('✅ Fallback пользователь создан:', testUserId);
@@ -83,9 +97,10 @@ function App() {
           console.warn('⚠️  initData недоступна');
           console.log('📝 Создаем тестового пользователя для разработки...');
           
-          const testUserId = 'test-' + Date.now();
+          // Используем правильный UUID v4 формат
+          const testUserId = generateUUID();
           localStorage.setItem('userId', testUserId);
-          localStorage.setItem('authToken', 'test-token-' + Date.now());
+          localStorage.setItem('authToken', 'test-token-' + generateUUID());
           localStorage.setItem('telegramTest', 'true');
           
           console.log('✅ Тестовый пользователь создан:', testUserId);
@@ -96,9 +111,10 @@ function App() {
         console.error('❌ Критическая ошибка при инициализации:', error);
         
         // Даже при критической ошибке создаем fallback пользователя
-        const testUserId = 'test-' + Date.now();
+        // Используем правильный UUID v4 формат
+        const testUserId = generateUUID();
         localStorage.setItem('userId', testUserId);
-        localStorage.setItem('authToken', 'test-token-' + Date.now());
+        localStorage.setItem('authToken', 'test-token-' + generateUUID());
         localStorage.setItem('telegramTest', 'true');
         
         console.warn('⚠️  Fallback пользователь создан из-за ошибки:', testUserId);
