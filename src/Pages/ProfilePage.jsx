@@ -77,125 +77,130 @@ export default function ProfilePage() {
   /**
    * Загрузить данные профиля пользователя при монтировании компонента
    * Сценарий:
-   * 1. Пытаемся получить userId из localStorage (уже залогированный пользователь)
-   * 2. Если нет - получаем данные из Telegram (новый пользователь)
-   * 3. Загружаем профиль с бэкенда (если уже есть в БД)
-   * 4. Если профиля нет - показываем данные из Telegram с возможностью редактирования
+   * 1. Получаем userId из localStorage (установлен при login в App.jsx)
+   * 2. Загружаем профиль с бэкенда используя этот userId
+   * 3. Если профиля нет - показываем fallback с данными из Telegram
    */
   useEffect(() => {
     const loadUserData = async () => {
       try {
         setLoading(true);
         
-        // 1️⃣ Получаем Telegram данные (основной источник информации)
+        // 1️⃣ Получаем Telegram данные (для отображения и fallback)
         const telegram = getTelegramUserData();
         if (telegram) {
           setTelegramData(telegram);
-          console.log('📱 Telegram данные готовы:', telegram);
+          console.log('📱 Telegram данные получены:', telegram);
+        } else {
+          console.warn('⚠️  Telegram данные недоступны (VPN или тестирование)');
         }
         
-        // 2️⃣ Проверяем userId в localStorage
-        let userId = localStorage.getItem('userId');
+        // 2️⃣ Получаем userId из localStorage (установлен при login)
+        const userId = localStorage.getItem('userId');
         console.log('🔍 userId из localStorage:', userId);
 
-        // 3️⃣ Если userId есть - загружаем существующий профиль
-        if (userId) {
-          try {
-            console.log('📥 Загружаем профиль из БД:', userId);
-            const userProfile = await api.getProfile(userId);
-            
-            if (userProfile) {
-              const firstName = userProfile.firstName || telegram?.firstName || '';
-              const lastName = userProfile.lastName || telegram?.lastName || '';
-              
-              setUserInfo({
-                id: userProfile.id,
-                firstName,
-                lastName,
-                email: userProfile.email || '',
-                phoneNumber: userProfile.phoneNumber || '',
-                avatar: (firstName[0] || '?') + (lastName[0] || ''),
-                subscriptionPlan: userProfile.subscriptionPlan || 'free',
-                subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
-                pets: [],
-                telegramVerified: true,
-              });
+        if (!userId) {
+          console.warn('⚠️  userId не найден в localStorage');
+          // Используем Telegram данные если есть
+          if (telegram) {
+            setUserInfo({
+              id: null,
+              firstName: telegram.firstName,
+              lastName: telegram.lastName,
+              email: '',
+              phoneNumber: '',
+              avatar: telegram.avatarLetters,
+              subscriptionPlan: 'free',
+              subscriptionExpiresAt: null,
+              pets: [],
+              telegramVerified: true,
+            });
 
-              setEditForm({
-                firstName,
-                lastName,
-                email: userProfile.email || '',
-                phoneNumber: userProfile.phoneNumber || '',
-              });
-
-              // 4️⃣ Загружаем питомцев
-              console.log('🐕 Загружаем питомцев:', userId);
-              const pets = await api.getPets(userId);
-              setUserInfo((prev) => ({
-                ...prev,
-                pets: pets || [],
-              }));
-
-              // 5️⃣ Загружаем историю заказов
-              console.log('📜 Загружаем заказы:', userId);
-              const userOrders = await api.getOrders(userId);
-              setOrders(userOrders || []);
-
-              console.log('✅ Профиль успешно загружен из БД');
-            } else {
-              throw new Error('Профиль не найден в БД');
-            }
-          } catch (profileError) {
-            console.warn('⚠️  Ошибка загрузки профиля из БД:', profileError.message);
-            // Если ошибка при загрузке из БД, используем Telegram данные
-            if (telegram) {
-              setUserInfo({
-                id: null,
-                firstName: telegram.firstName,
-                lastName: telegram.lastName,
-                email: '',
-                phoneNumber: '',
-                avatar: telegram.avatarLetters,
-                subscriptionPlan: 'free',
-                subscriptionExpiresAt: null,
-                pets: [],
-                telegramVerified: true,
-              });
-
-              setEditForm({
-                firstName: telegram.firstName,
-                lastName: telegram.lastName,
-                email: '',
-                phoneNumber: '',
-              });
-
-              console.log('ℹ️  Используем данные из Telegram, заполните недостающие поля');
-            }
+            setEditForm({
+              firstName: telegram.firstName,
+              lastName: telegram.lastName,
+              email: '',
+              phoneNumber: '',
+            });
           }
-        } else if (telegram) {
-          // Новый пользователь - заполняем форму данными из Telegram
-          console.log('👤 Новый пользователь, используем Telegram данные');
-          setUserInfo({
-            id: null,
-            firstName: telegram.firstName,
-            lastName: telegram.lastName,
-            email: '',
-            phoneNumber: '',
-            avatar: telegram.avatarLetters,
-            subscriptionPlan: 'free',
-            subscriptionExpiresAt: null,
-            pets: [],
-            telegramVerified: true,
-          });
+          setLoading(false);
+          return;
+        }
 
-          setEditForm({
-            firstName: telegram.firstName,
-            lastName: telegram.lastName,
-            email: '',
-            phoneNumber: '',
-          });
-        } else {
-          throw new Error('Не удалось получить данные. Откройте приложение через Telegram.');
+        // 3️⃣ Загружаем профиль с бэкенда по userId
+        try {
+          console.log('📥 Загружаем профиль с бэкенда:', userId);
+          const userProfile = await api.getProfile(userId);
+          
+          if (userProfile) {
+            const firstName = userProfile.firstName || telegram?.firstName || '';
+            const lastName = userProfile.lastName || telegram?.lastName || '';
+            
+            setUserInfo({
+              id: userProfile.id,
+              firstName,
+              lastName,
+              email: userProfile.email || '',
+              phoneNumber: userProfile.phoneNumber || '',
+              avatar: (firstName[0] || '?') + (lastName[0] || ''),
+              subscriptionPlan: userProfile.subscriptionPlan || 'free',
+              subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
+              pets: [],
+              telegramVerified: true,
+            });
+
+            setEditForm({
+              firstName,
+              lastName,
+              email: userProfile.email || '',
+              phoneNumber: userProfile.phoneNumber || '',
+            });
+
+            // 4️⃣ Загружаем питомцев
+            console.log('🐕 Загружаем питомцев:', userId);
+            const pets = await api.getPets(userId);
+            setUserInfo((prev) => ({
+              ...prev,
+              pets: pets || [],
+            }));
+
+            // 5️⃣ Загружаем историю заказов
+            console.log('📜 Загружаем заказы:', userId);
+            const userOrders = await api.getOrders(userId);
+            setOrders(userOrders || []);
+
+            console.log('✅ Профиль успешно загружен с бэкенда');
+          } else {
+            throw new Error('Профиль не найден');
+          }
+        } catch (profileError) {
+          console.warn('⚠️  Ошибка загрузки профиля с бэкенда:', profileError.message);
+          // Fallback: используем Telegram данные
+          if (telegram) {
+            setUserInfo({
+              id: userId,
+              firstName: telegram.firstName,
+              lastName: telegram.lastName,
+              email: '',
+              phoneNumber: '',
+              avatar: telegram.avatarLetters,
+              subscriptionPlan: 'free',
+              subscriptionExpiresAt: null,
+              pets: [],
+              telegramVerified: true,
+            });
+
+            setEditForm({
+              firstName: telegram.firstName,
+              lastName: telegram.lastName,
+              email: '',
+              phoneNumber: '',
+            });
+
+            console.log('ℹ️  Используем данные из Telegram, профиль будет создан при первом редактировании');
+          } else {
+            throw new Error('Не удалось загрузить данные ни с бэкенда ни с Telegram');
+          }
         }
 
       } catch (err) {
