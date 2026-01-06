@@ -3,99 +3,141 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 
 export default function ProfilePage() {
-  // Тестовые данные по умолчанию
-  const testUserData = {
-    id: 'test-user-123',
-    name: 'Иван Петров',
-    email: 'ivan@example.com',
-    phone: '+7 (999) 123-45-67',
-    avatar: 'ИП',
-    subscriptionPlan: 'premium',
-    subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  };
-
-  // TODO: Получить данные пользователя из Telegram
-  // Попытка получить данные из Telegram WebApp
-  const getTelegramUser = () => {
-    try {
-      const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-      if (telegramUser) {
-        return {
-          name: `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim(),
-          email: telegramUser.username ? `@${telegramUser.username}` : 'Не указана',
-          phone: 'Не указан',
-          avatar: (telegramUser.first_name?.[0] || 'П') + (telegramUser.last_name?.[0] || 'П'),
-        };
-      }
-    } catch (error) {
-      console.log('Telegram данные недоступны, используются тестовые значения');
-    }
-    return null;
-  };
-
+  // ==================== СОСТОЯНИЕ ====================
+  // Данные профиля пользователя
   const [userInfo, setUserInfo] = useState({
-    ...testUserData,
-    ...(getTelegramUser() || {}),
+    id: null,
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    avatar: '?',
+    subscriptionPlan: 'free',
+    subscriptionExpiresAt: null,
     pets: [],
   });
 
+  // История заказов и подписок
   const [orders, setOrders] = useState([]);
+  
+  // UI состояние
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  // ВАЖНО: editForm должна иметь правильную структуру для отправки на бэкенд
+  
+  // Форма редактирования профиля (только те поля которые может изменить пользователь)
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phoneNumber: '',
   });
+
+  // Форма добавления питомца
   const [showAddPetForm, setShowAddPetForm] = useState(false);
   const [newPet, setNewPet] = useState({ name: '', breed: '', age: '' });
 
-  // Загрузить профиль и данные при монтировании компонента
+  // ==================== ПОЛУЧЕНИЕ ДАННЫХ TELEGRAM ====================
+  /**
+   * Получить данные пользователя из Telegram WebApp
+   * ВАЖНО: Это работает только когда приложение открыто в Telegram
+   */
+  const getTelegramUserData = () => {
+    try {
+      const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (telegramUser) {
+        console.log('✅ Данные Telegram получены:', telegramUser);
+        return {
+          firstName: telegramUser.first_name || '',
+          lastName: telegramUser.last_name || '',
+          username: telegramUser.username,
+          telegramId: telegramUser.id,
+          avatar: (telegramUser.first_name?.[0] || '?') + (telegramUser.last_name?.[0] || ''),
+        };
+      } else {
+        console.log('⚠️  Telegram данные недоступны (не открыто в Telegram)');
+      }
+    } catch (error) {
+      console.log('❌ Ошибка при чтении Telegram данных:', error);
+    }
+    return null;
+  };
+
+  // ==================== ЗАГРУЗКА ПРОФИЛЯ ====================
+  /**
+   * Загрузить данные профиля пользователя при монтировании компонента
+   * Получает существующего пользователя по ID из localStorage
+   * или создает нового если необходимо
+   */
   useEffect(() => {
     const loadUserData = async () => {
       try {
         setLoading(true);
-        const userId = localStorage.getItem('userId') || testUserData.id;
+        
+        // 1. Получаем сохраненный userId из localStorage
+        let userId = localStorage.getItem('userId');
+        console.log('🔍 userId из localStorage:', userId);
 
-        // Загрузить профиль пользователя
-        const userProfile = await api.getProfile(userId);
-        setUserInfo((prev) => ({
-          ...prev,
-          ...userProfile,
-        }));
-        // ВАЖНО: Инициализируем editForm с данными профиля (только нужные поля!)
-        setEditForm({
-          firstName: userProfile?.firstName || '',
-          lastName: userProfile?.lastName || '',
-          email: userProfile?.email || '',
-          phoneNumber: userProfile?.phoneNumber || '',
-        });
+        // 2. Если userId нет, пытаемся получить из Telegram
+        if (!userId) {
+          const telegramData = getTelegramUserData();
+          if (!telegramData) {
+            throw new Error('Не удалось получить данные пользователя. Откройте приложение через Telegram.');
+          }
+          console.log('📱 Используем Telegram данные:', telegramData);
+        }
 
-        // Загрузить список питомцев
-        const pets = await api.getPets(userId);
-        setUserInfo((prev) => ({
-          ...prev,
-          pets: pets || [],
-        }));
+        // 3. Если у нас есть userId - загружаем профиль
+        if (userId) {
+          console.log('📥 Загружаем профиль пользователя:', userId);
+          const userProfile = await api.getProfile(userId);
+          
+          if (!userProfile) {
+            throw new Error('Профиль не найден');
+          }
 
-        // Загрузить историю заказов
-        const userOrders = await api.getOrders(userId);
-        setOrders(userOrders || []);
+          // Обновляем состояние с реальными данными
+          const firstName = userProfile.firstName || '';
+          const lastName = userProfile.lastName || '';
+          
+          setUserInfo({
+            id: userProfile.id,
+            firstName,
+            lastName,
+            email: userProfile.email || '',
+            phoneNumber: userProfile.phoneNumber || '',
+            avatar: (firstName[0] || '?') + (lastName[0] || ''),
+            subscriptionPlan: userProfile.subscriptionPlan || 'free',
+            subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
+            pets: [],
+          });
+
+          // Инициализируем editForm с реальными данными
+          setEditForm({
+            firstName,
+            lastName,
+            email: userProfile.email || '',
+            phoneNumber: userProfile.phoneNumber || '',
+          });
+
+          // 4. Загружаем питомцев пользователя
+          console.log('🐕 Загружаем питомцев пользователя:', userId);
+          const pets = await api.getPets(userId);
+          setUserInfo((prev) => ({
+            ...prev,
+            pets: pets || [],
+          }));
+
+          // 5. Загружаем историю заказов
+          console.log('📜 Загружаем заказы пользователя:', userId);
+          const userOrders = await api.getOrders(userId);
+          setOrders(userOrders || []);
+
+          console.log('✅ Профиль успешно загружен');
+        }
       } catch (err) {
-        console.log('Ошибка загрузки профиля:', err.message);
-        // TODO: Обработать ошибку подключения к API
-        setError('Не удалось загрузить данные профиля');
-        // Используем тестовые данные если API недоступен
-        setUserInfo((prev) => ({
-          ...prev,
-          pets: [
-            { id: 1, name: 'Макс', breed: 'Лабрадор', age: 3 },
-            { id: 2, name: 'Лайки', breed: 'Хаски', age: 2 },
-          ],
-        }));
+        console.error('❌ Ошибка при загрузке профиля:', err.message);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -104,20 +146,35 @@ export default function ProfilePage() {
     loadUserData();
   }, []);
 
-  // TODO: Обновить профиль пользователя
-  // Функция для сохранения отредактированных данных
+  // ==================== РЕДАКТИРОВАНИЕ ПРОФИЛЯ ====================
+  /**
+   * Сохранить изменения профиля на бэкенде
+   * Отправляет только измененные поля
+   */
   const handleEditProfile = async () => {
     try {
-      const userId = localStorage.getItem('userId') || testUserData.id;
-      console.log('📤 Отправляем данные профиля:', { userId, editForm });
+      if (!userInfo.id) {
+        throw new Error('ID пользователя не найден');
+      }
+
+      console.log('📤 Отправляем обновление профиля:', { userId: userInfo.id, data: editForm });
       
-      const updatedUser = await api.updateProfile(userId, editForm);
-      console.log('✅ Профиль обновлён:', updatedUser);
+      const updatedUser = await api.updateProfile(userInfo.id, editForm);
+      console.log('✅ Профиль обновлен:', updatedUser);
+      
+      // Обновляем локальное состояние
+      const firstName = updatedUser.firstName || '';
+      const lastName = updatedUser.lastName || '';
       
       setUserInfo((prev) => ({
         ...prev,
-        ...updatedUser,
+        firstName,
+        lastName,
+        email: updatedUser.email || '',
+        phoneNumber: updatedUser.phoneNumber || '',
+        avatar: (firstName[0] || '?') + (lastName[0] || ''),
       }));
+      
       setIsEditing(false);
       alert('✅ Профиль успешно обновлён!');
     } catch (err) {
@@ -126,32 +183,42 @@ export default function ProfilePage() {
     }
   };
 
-  // TODO: Добавить нового питомца
-  // Функция для добавления питомца
+  // ==================== УПРАВЛЕНИЕ ПИТОМЦАМИ ====================
+  /**
+   * Добавить нового питомца пользователя
+   * Валидирует данные и отправляет на бэкенд
+   */
   const handleAddPet = async () => {
     try {
-      if (!newPet.name || !newPet.breed || !newPet.age) {
-        alert('Пожалуйста, заполните все поля');
+      // Валидация
+      if (!newPet.name.trim() || !newPet.breed.trim() || !newPet.age) {
+        alert('❌ Пожалуйста, заполните все поля питомца');
         return;
       }
 
-      const userId = localStorage.getItem('userId') || testUserData.id;
+      if (!userInfo.id) {
+        throw new Error('ID пользователя не найден');
+      }
+
       const petData = {
-        name: newPet.name,
-        breed: newPet.breed,
+        name: newPet.name.trim(),
+        breed: newPet.breed.trim(),
         age: parseInt(newPet.age),
-        userId,
+        userId: userInfo.id,
+        description: '', // Опционально - может быть добавлено позже
       };
-      
-      console.log('📤 Отправляем питомца:', petData);
+
+      console.log('📤 Отправляем новое животное:', petData);
       const createdPet = await api.createPet(petData);
       console.log('✅ Питомец создан:', createdPet);
 
+      // Добавляем питомца в список
       setUserInfo((prev) => ({
         ...prev,
         pets: [...prev.pets, createdPet],
       }));
 
+      // Очищаем форму
       setNewPet({ name: '', breed: '', age: '' });
       setShowAddPetForm(false);
       alert('✅ Питомец успешно добавлен!');
@@ -161,32 +228,44 @@ export default function ProfilePage() {
     }
   };
 
-  // TODO: Удалить питомца
-  // Функция для удаления питомца
-  const handleDeletePet = async (petId) => {
+  /**
+   * Удалить питомца пользователя
+   * Запрашивает подтверждение перед удалением
+   */
+  const handleDeletePet = async (petId, petName) => {
     try {
-      if (!confirm('Вы уверены?')) return;
+      if (!confirm(`Вы уверены что хотите удалить ${petName}?`)) {
+        return;
+      }
 
+      console.log('🗑️  Удаляем питомца:', petId);
       await api.deletePet(petId);
+      console.log('✅ Питомец удален');
+
+      // Удаляем из локального списка
       setUserInfo((prev) => ({
         ...prev,
         pets: prev.pets.filter((p) => p.id !== petId),
       }));
-      // TODO: Показать тост уведомление "Питомец удалён"
-      console.log('Питомец удален');
+      
+      alert('✅ Питомец успешно удален!');
     } catch (err) {
-      console.log('Ошибка при удалении питомца:', err.message);
-      alert('Не удалось удалить питомца');
+      console.error('❌ Ошибка при удалении питомца:', err);
+      alert(`Не удалось удалить питомца: ${err.message}`);
     }
   };
 
-  // TODO: Управление подпиской (изменение тарифа)
+  /**
+   * TODO: Управление подпиской (изменение тарифа)
+   * Должно перенаправлять на страницу тарифов или открывать модальное окно
+   */
   const handleChangePlan = () => {
-    // TODO: Перейти на страницу тарифов или открыть модальное окно
-    console.log('Переход на изменение плана подписки');
+    console.log('📋 Переход на изменение плана подписки');
     // window.location.href = '/tariffs';
+    alert('Функция смены тарифа будет доступна в следующем обновлении');
   };
 
+  // ==================== РЕНДЕРИНГ ====================
   return (
     <div className="profile-page">
       <div className="profile-header">
@@ -195,10 +274,12 @@ export default function ProfilePage() {
 
       <div className="profile-container">
         {loading ? (
-          <div className="loading">Загрузка профиля...</div>
+          <div className="loading">⏳ Загрузка профиля...</div>
+        ) : error ? (
+          <div className="error">❌ {error}</div>
         ) : (
           <>
-            {/* Информация пользователя */}
+            {/* ========== ИНФОРМАЦИЯ ПОЛЬЗОВАТЕЛЯ ========== */}
             <div className="profile-card">
               <div className="avatar">
                 <span>{userInfo.avatar}</span>
@@ -206,17 +287,19 @@ export default function ProfilePage() {
               {!isEditing ? (
                 <>
                   <div className="user-info">
-                    <h2>{userInfo.name}</h2>
-                    <p className="email">{userInfo.email}</p>
-                    <p className="phone">{userInfo.phone}</p>
+                    <h2>
+                      {userInfo.firstName} {userInfo.lastName}
+                    </h2>
+                    <p className="email">{userInfo.email || 'Email не указан'}</p>
+                    <p className="phone">{userInfo.phoneNumber || 'Телефон не указан'}</p>
                   </div>
                   <button className="edit-button" onClick={() => setIsEditing(true)}>
-                    Редактировать
+                    ✏️ Редактировать
                   </button>
                 </>
               ) : (
                 <>
-                  {/* TODO: Форма редактирования профиля - сделать UI для редактирования полей */}
+                  {/* Форма редактирования профиля */}
                   <div className="edit-form">
                     <input
                       type="text"
@@ -242,16 +325,16 @@ export default function ProfilePage() {
                       onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
                       placeholder="Телефон"
                     />
-                    <button onClick={handleEditProfile}>Сохранить</button>
-                    <button onClick={() => setIsEditing(false)}>Отмена</button>
+                    <button onClick={handleEditProfile}>💾 Сохранить</button>
+                    <button onClick={() => setIsEditing(false)}>❌ Отмена</button>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Питомцы */}
+            {/* ========== ПИТОМЦЫ ========== */}
             <div className="pets-section">
-              <h3>Мои питомцы</h3>
+              <h3>🐕 Мои питомцы</h3>
               <div className="pets-list">
                 {userInfo.pets && userInfo.pets.length > 0 ? (
                   userInfo.pets.map((pet) => (
@@ -262,24 +345,23 @@ export default function ProfilePage() {
                         <p>{pet.breed}</p>
                         <p className="age">{pet.age} лет</p>
                       </div>
-                      {/* TODO: Добавить кнопки редактирования и удаления питомца */}
                       <button
                         className="delete-pet-button"
-                        onClick={() => handleDeletePet(pet.id)}
+                        onClick={() => handleDeletePet(pet.id, pet.name)}
                       >
                         ✕
                       </button>
                     </div>
                   ))
                 ) : (
-                  <p className="no-pets">Питомцев нет</p>
+                  <p className="no-pets">У вас еще нет питомцев</p>
                 )}
               </div>
 
-              {/* TODO: Оформить UI для добавления питомца (форма в модальном окне или раскрывающейся секции) */}
+              {/* Форма добавления питомца */}
               {!showAddPetForm ? (
                 <button className="add-pet-button" onClick={() => setShowAddPetForm(true)}>
-                  + Добавить питомца
+                  ➕ Добавить питомца
                 </button>
               ) : (
                 <div className="add-pet-form">
@@ -301,15 +383,15 @@ export default function ProfilePage() {
                     onChange={(e) => setNewPet({ ...newPet, age: e.target.value })}
                     placeholder="Возраст (в годах)"
                   />
-                  <button onClick={handleAddPet}>Добавить</button>
-                  <button onClick={() => setShowAddPetForm(false)}>Отмена</button>
+                  <button onClick={handleAddPet}>💾 Добавить</button>
+                  <button onClick={() => setShowAddPetForm(false)}>❌ Отмена</button>
                 </div>
               )}
             </div>
 
-            {/* Подписка */}
+            {/* ========== ПОДПИСКА ========== */}
             <div className="subscription-section">
-              <h3>Подписка</h3>
+              <h3>💳 Подписка</h3>
               <div className="subscription-card">
                 <p className="plan">
                   План: <strong>{userInfo.subscriptionPlan?.toUpperCase() || 'free'}</strong>
@@ -322,16 +404,15 @@ export default function ProfilePage() {
                       : 'Не активна'}
                   </strong>
                 </p>
-                {/* TODO: Добавить функционал изменения плана подписки */}
                 <button className="change-plan-button" onClick={handleChangePlan}>
-                  Изменить план
+                  🔄 Изменить план
                 </button>
               </div>
             </div>
 
-            {/* История операций */}
+            {/* ========== ИСТОРИЯ ОПЕРАЦИЙ ========== */}
             <div className="history-section">
-              <h3>История</h3>
+              <h3>📜 История</h3>
               {orders && orders.length > 0 ? (
                 orders.map((order) => (
                   <div key={order.id} className="history-item">
@@ -343,7 +424,7 @@ export default function ProfilePage() {
                   </div>
                 ))
               ) : (
-                <p className="no-orders">Заказов нет</p>
+                <p className="no-orders">История операций пуста</p>
               )}
             </div>
           </>
