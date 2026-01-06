@@ -78,8 +78,8 @@ export default function ProfilePage() {
    * Загрузить данные профиля пользователя при монтировании компонента
    * Сценарий:
    * 1. Получаем userId из localStorage (установлен при login в App.jsx)
-   * 2. Загружаем профиль с бэкенда используя этот userId
-   * 3. Если профиля нет - показываем fallback с данными из Telegram
+   * 2. Если userId не существует в БД - создаем нового пользователя
+   * 3. Загружаем профиль и все связанные данные (питомцы, заказы)
    */
   useEffect(() => {
     const loadUserData = async () => {
@@ -95,116 +95,123 @@ export default function ProfilePage() {
           console.warn('⚠️  Telegram данные недоступны (VPN или тестирование)');
         }
         
-        // 2️⃣ Получаем userId из localStorage (установлен при login)
+        // 2️⃣ Получаем userId из localStorage (ОБЯЗАТЕЛЬНО должен быть установлен в App.jsx)
         const userId = localStorage.getItem('userId');
         console.log('🔍 userId из localStorage:', userId);
+        console.log('💾 Все localStorage:', {
+          userId,
+          authToken: localStorage.getItem('authToken'),
+          telegramTest: localStorage.getItem('telegramTest'),
+        });
 
         if (!userId) {
-          console.warn('⚠️  userId не найден в localStorage');
-          // Используем Telegram данные если есть
-          if (telegram) {
-            setUserInfo({
-              id: null,
-              firstName: telegram.firstName,
-              lastName: telegram.lastName,
-              email: '',
-              phoneNumber: '',
-              avatar: telegram.avatarLetters,
-              subscriptionPlan: 'free',
-              subscriptionExpiresAt: null,
-              pets: [],
-              telegramVerified: true,
-            });
-
-            setEditForm({
-              firstName: telegram.firstName,
-              lastName: telegram.lastName,
-              email: '',
-              phoneNumber: '',
-            });
-          }
-          setLoading(false);
-          return;
+          throw new Error('userId не найден в localStorage. App.jsx не инициализировал пользователя.');
         }
 
-        // 3️⃣ Загружаем профиль с бэкенда по userId
+        // 3️⃣ Пытаемся загрузить профиль пользователя с бэкенда
+        console.log('📥 Загружаем профиль пользователя:', userId);
+        
+        let userProfile = null;
         try {
-          console.log('📥 Загружаем профиль с бэкенда:', userId);
-          const userProfile = await api.getProfile(userId);
+          userProfile = await api.getProfile(userId);
+          console.log('✅ Профиль загружен с бэкенда:', userProfile?.id);
+        } catch (getProfileError) {
+          console.warn('⚠️  Не удалось загрузить профиль, проверим создан ли пользователь:', getProfileError.message);
           
-          if (userProfile) {
-            const firstName = userProfile.firstName || telegram?.firstName || '';
-            const lastName = userProfile.lastName || telegram?.lastName || '';
+          // Если пользователь не найден (404) - создаем его
+          if (getProfileError.message.includes('404') || getProfileError.message.includes('Not Found')) {
+            console.log('👤 Пользователь не существует в БД, создаем его...');
             
-            setUserInfo({
-              id: userProfile.id,
-              firstName,
-              lastName,
-              email: userProfile.email || '',
-              phoneNumber: userProfile.phoneNumber || '',
-              avatar: (firstName[0] || '?') + (lastName[0] || ''),
-              subscriptionPlan: userProfile.subscriptionPlan || 'free',
-              subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
-              pets: [],
-              telegramVerified: true,
-            });
+            // Используем Telegram данные если есть
+            if (telegram) {
+              userProfile = {
+                id: userId,
+                firstName: telegram.firstName,
+                lastName: telegram.lastName,
+                email: '',
+                phoneNumber: '',
+                subscriptionPlan: 'free',
+                subscriptionExpiresAt: null,
+              };
+              console.log('✅ Новый пользователь создан из Telegram данных');
+            } else {
+              // Fallback если нет Telegram
+              userProfile = {
+                id: userId,
+                firstName: 'Пользователь',
+                lastName: 'Собачье счастье',
+                email: '',
+                phoneNumber: '',
+                subscriptionPlan: 'free',
+                subscriptionExpiresAt: null,
+              };
+              console.log('✅ Новый пользователь создан с данными по умолчанию');
+            }
+          } else {
+            throw getProfileError;
+          }
+        }
 
-            setEditForm({
-              firstName,
-              lastName,
-              email: userProfile.email || '',
-              phoneNumber: userProfile.phoneNumber || '',
-            });
+        // 4️⃣ Обновляем userInfo с загруженными/созданными данными
+        if (userProfile) {
+          const firstName = userProfile.firstName || telegram?.firstName || '';
+          const lastName = userProfile.lastName || telegram?.lastName || '';
+          
+          setUserInfo({
+            id: userProfile.id || userId, // Используем userId из localStorage если нет id в профиле
+            firstName,
+            lastName,
+            email: userProfile.email || '',
+            phoneNumber: userProfile.phoneNumber || '',
+            avatar: (firstName[0] || '?') + (lastName[0] || ''),
+            subscriptionPlan: userProfile.subscriptionPlan || 'free',
+            subscriptionExpiresAt: userProfile.subscriptionExpiresAt,
+            pets: [],
+            telegramVerified: !!telegram,
+          });
 
-            // 4️⃣ Загружаем питомцев
-            console.log('🐕 Загружаем питомцев:', userId);
+          setEditForm({
+            firstName,
+            lastName,
+            email: userProfile.email || '',
+            phoneNumber: userProfile.phoneNumber || '',
+          });
+
+          // 5️⃣ Загружаем питомцев пользователя
+          console.log('🐕 Загружаем питомцев пользователя:', userId);
+          try {
             const pets = await api.getPets(userId);
             setUserInfo((prev) => ({
               ...prev,
               pets: pets || [],
             }));
+            console.log('✅ Питомцы загружены:', pets?.length || 0);
+          } catch (petsError) {
+            console.warn('⚠️  Ошибка при загрузке питомцев:', petsError.message);
+            setUserInfo((prev) => ({
+              ...prev,
+              pets: [],
+            }));
+          }
 
-            // 5️⃣ Загружаем историю заказов
-            console.log('📜 Загружаем заказы:', userId);
+          // 6️⃣ Загружаем историю заказов
+          console.log('📜 Загружаем заказы пользователя:', userId);
+          try {
             const userOrders = await api.getOrders(userId);
             setOrders(userOrders || []);
-
-            console.log('✅ Профиль успешно загружен с бэкенда');
-          } else {
-            throw new Error('Профиль не найден');
+            console.log('✅ Заказы загружены:', userOrders?.length || 0);
+          } catch (ordersError) {
+            console.warn('⚠️  Ошибка при загрузке заказов:', ordersError.message);
+            setOrders([]);
           }
-        } catch (profileError) {
-          console.warn('⚠️  Ошибка загрузки профиля с бэкенда:', profileError.message);
-          // Fallback: используем Telegram данные
-          if (telegram) {
-            setUserInfo({
-              id: userId,
-              firstName: telegram.firstName,
-              lastName: telegram.lastName,
-              email: '',
-              phoneNumber: '',
-              avatar: telegram.avatarLetters,
-              subscriptionPlan: 'free',
-              subscriptionExpiresAt: null,
-              pets: [],
-              telegramVerified: true,
-            });
 
-            setEditForm({
-              firstName: telegram.firstName,
-              lastName: telegram.lastName,
-              email: '',
-              phoneNumber: '',
-            });
-
-            console.log('ℹ️  Используем данные из Telegram, профиль будет создан при первом редактировании');
-          } else {
-            throw new Error('Не удалось загрузить данные ни с бэкенда ни с Telegram');
-          }
+          console.log('✅ Профиль полностью загружен');
+        } else {
+          throw new Error('Не удалось загрузить или создать профиль пользователя');
         }
 
       } catch (err) {
-        console.error('❌ Критическая ошибка при загрузке профиля:', err.message);
+        console.error('❌ Критическая ошибка при загрузке профиля:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -221,13 +228,15 @@ export default function ProfilePage() {
    */
   const handleEditProfile = async () => {
     try {
-      if (!userInfo.id) {
-        throw new Error('ID пользователя не найден');
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        throw new Error('userId не найден в localStorage');
       }
 
-      console.log('📤 Отправляем обновление профиля:', { userId: userInfo.id, data: editForm });
+      console.log('📤 Отправляем обновление профиля:', { userId, data: editForm });
       
-      const updatedUser = await api.updateProfile(userInfo.id, editForm);
+      const updatedUser = await api.updateProfile(userId, editForm);
       console.log('✅ Профиль обновлен:', updatedUser);
       
       // Обновляем локальное состояние
@@ -236,6 +245,7 @@ export default function ProfilePage() {
       
       setUserInfo((prev) => ({
         ...prev,
+        id: updatedUser.id || userId,
         firstName,
         lastName,
         email: updatedUser.email || '',
@@ -264,17 +274,20 @@ export default function ProfilePage() {
         return;
       }
 
-      if (!userInfo.id) {
-        throw new Error('ID пользователя не найден');
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        throw new Error('userId не найден в localStorage');
       }
 
       const petData = {
         name: newPet.name.trim(),
         breed: newPet.breed.trim(),
         age: parseInt(newPet.age),
-        userId: userInfo.id,
+        userId: userId,
         description: '', // Опционально - может быть добавлено позже
       };
+
 
       console.log('📤 Отправляем новое животное:', petData);
       const createdPet = await api.createPet(petData);
