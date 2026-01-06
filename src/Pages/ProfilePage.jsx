@@ -123,29 +123,38 @@ export default function ProfilePage() {
             console.log('👤 Пользователь не существует в БД, создаем его...');
             
             // Используем Telegram данные если есть
+            let newUserData = {};
             if (telegram) {
-              userProfile = {
-                id: userId,
+              newUserData = {
                 firstName: telegram.firstName,
                 lastName: telegram.lastName,
-                email: '',
-                phoneNumber: '',
-                subscriptionPlan: 'free',
-                subscriptionExpiresAt: null,
               };
-              console.log('✅ Новый пользователь создан из Telegram данных');
+              console.log('✅ Используем данные из Telegram:', newUserData);
             } else {
               // Fallback если нет Telegram
-              userProfile = {
-                id: userId,
+              newUserData = {
                 firstName: 'Пользователь',
                 lastName: 'Собачье счастье',
+              };
+              console.log('✅ Используем данные по умолчанию:', newUserData);
+            }
+
+            // Отправляем на бэкенд чтобы создать/сохранить пользователя
+            console.log('📤 Отправляем данные пользователя на бэкенд для сохранения...');
+            try {
+              userProfile = await api.updateProfile(userId, newUserData);
+              console.log('✅ Пользователь создан/обновлен на бэкенде:', userProfile?.id);
+            } catch (createError) {
+              console.warn('⚠️  Не удалось создать пользователя на бэкенде, используем локальные данные:', createError.message);
+              // Fallback - используем локальные данные
+              userProfile = {
+                id: userId,
+                ...newUserData,
                 email: '',
                 phoneNumber: '',
                 subscriptionPlan: 'free',
                 subscriptionExpiresAt: null,
               };
-              console.log('✅ Новый пользователь создан с данными по умолчанию');
             }
           } else {
             throw getProfileError;

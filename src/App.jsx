@@ -63,6 +63,7 @@ function App() {
         
         if (initData) {
           console.log('📋 initData длина:', initData.length);
+          console.log('📋 initData preview:', initData.substring(0, 100) + '...');
         }
 
         if (initData) {
