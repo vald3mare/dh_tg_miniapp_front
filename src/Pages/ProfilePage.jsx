@@ -109,18 +109,20 @@ export default function ProfilePage() {
   const handleEditProfile = async () => {
     try {
       const userId = localStorage.getItem('userId') || testUserData.id;
+      console.log('📤 Отправляем данные профиля:', { userId, editForm });
+      
       const updatedUser = await api.updateProfile(userId, editForm);
+      console.log('✅ Профиль обновлён:', updatedUser);
+      
       setUserInfo((prev) => ({
         ...prev,
         ...updatedUser,
       }));
       setIsEditing(false);
-      // TODO: Показать тост уведомление "Профиль обновлён"
-      console.log('Профиль успешно обновлён');
+      alert('✅ Профиль успешно обновлён!');
     } catch (err) {
-      console.log('Ошибка при обновлении профиля:', err.message);
-      // TODO: Показать сообщение об ошибке
-      alert('Не удалось обновить профиль');
+      console.error('❌ Ошибка при обновлении профиля:', err);
+      alert(`Не удалось обновить профиль: ${err.message}`);
     }
   };
 
@@ -134,11 +136,16 @@ export default function ProfilePage() {
       }
 
       const userId = localStorage.getItem('userId') || testUserData.id;
-      const createdPet = await api.createPet({
-        ...newPet,
-        userId,
+      const petData = {
+        name: newPet.name,
+        breed: newPet.breed,
         age: parseInt(newPet.age),
-      });
+        userId,
+      };
+      
+      console.log('📤 Отправляем питомца:', petData);
+      const createdPet = await api.createPet(petData);
+      console.log('✅ Питомец создан:', createdPet);
 
       setUserInfo((prev) => ({
         ...prev,
@@ -147,12 +154,10 @@ export default function ProfilePage() {
 
       setNewPet({ name: '', breed: '', age: '' });
       setShowAddPetForm(false);
-      // TODO: Показать тост уведомление "Питомец добавлен"
-      console.log('Питомец успешно добавлен');
+      alert('✅ Питомец успешно добавлен!');
     } catch (err) {
-      console.log('Ошибка при добавлении питомца:', err.message);
-      // TODO: Показать сообщение об ошибке
-      alert('Не удалось добавить питомца');
+      console.error('❌ Ошибка при добавлении питомца:', err);
+      alert(`Не удалось добавить питомца: ${err.message}`);
     }
   };
 
