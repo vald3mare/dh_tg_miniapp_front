@@ -43,7 +43,13 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({});
+  // ВАЖНО: editForm должна иметь правильную структуру для отправки на бэкенд
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+  });
   const [showAddPetForm, setShowAddPetForm] = useState(false);
   const [newPet, setNewPet] = useState({ name: '', breed: '', age: '' });
 
@@ -60,7 +66,13 @@ export default function ProfilePage() {
           ...prev,
           ...userProfile,
         }));
-        setEditForm(userProfile);
+        // ВАЖНО: Инициализируем editForm с данными профиля (только нужные поля!)
+        setEditForm({
+          firstName: userProfile?.firstName || '',
+          lastName: userProfile?.lastName || '',
+          email: userProfile?.email || '',
+          phoneNumber: userProfile?.phoneNumber || '',
+        });
 
         // Загрузить список питомцев
         const pets = await api.getPets(userId);
@@ -203,9 +215,15 @@ export default function ProfilePage() {
                   <div className="edit-form">
                     <input
                       type="text"
-                      value={editForm.name || ''}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      value={editForm.firstName || ''}
+                      onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
                       placeholder="Имя"
+                    />
+                    <input
+                      type="text"
+                      value={editForm.lastName || ''}
+                      onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                      placeholder="Фамилия"
                     />
                     <input
                       type="email"
@@ -215,8 +233,8 @@ export default function ProfilePage() {
                     />
                     <input
                       type="tel"
-                      value={editForm.phone || ''}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      value={editForm.phoneNumber || ''}
+                      onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
                       placeholder="Телефон"
                     />
                     <button onClick={handleEditProfile}>Сохранить</button>
